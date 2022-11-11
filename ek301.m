@@ -6,7 +6,8 @@ X = [0 12 6 18 24];
 Y = [0 0 6 4 0];
 L = [0;0;0;0;0;0;27.2;0;0;0];%first half horizontal, second vert. Each row is joint
 %}
-%load("TrussDesign1_Cole_A3.mat")
+clear;
+load("TrussDesign3_Cole_A3.mat")
 [j, m] = size(C);
 A = zeros(2*j, m);
 totallength = 0;
@@ -36,31 +37,34 @@ fprintf('EK301, Section A3, Truss me bro: Cole R., Henry N., Gosoo P., 11/9/2022
 fprintf("Load: %f oz\n", L(L~=0));
 fprintf("Member forces in oz\n");
 format = 'm%d: %.3f (%c)\n';
-max = 0;
+minc = zeros(1, numel(find(T(1:length(T)-3) < 0)));
+clength = zeros(1, numel(find(T(1:length(T)-3) < 0)));
 critm = 0;
+counter = 1;
 for i = 1:(numel(T)-3)
     if(T(i) < 0) 
         Torc = 'C';
-        if(abs(T(i)) > max)
-            max = T(i);
-            critm = i;
-        else
-        end
+        minc(counter) = T(i);
+        critm = i;
+        mem = (find(C(:,critm) == 1))';
+        p1 = mem(1);
+        p2 = mem(2);
+        length = sqrt((X(p1) - X(p2))^2 + (Y(p1) - Y(p2))^2);
+        clength(counter) = length; 
+        counter = counter + 1;
     else
         Torc = 'T';
     end
     fprintf(format, i, abs(T(i)), Torc);
 end
-mem = (find(C(:,critm) == 1))';
-p1 = mem(1);
-p2 = mem(2);
-L = sqrt((X(p1) - X(p2))^2 + (Y(p1) + Y(p2))^2);
-pcrit = 2945/L^2;
-Wmax = -pcrit/L;
+tload = L(L~=0);
+Rm = minc./tload;
+pcrits = 2945./(clength.^2);
+Wmax = max(pcrits./Rm);
 fprintf("Reaction forces in oz:\n")
 fprintf("Sx1: %.2f\n", T(numel(T) - 2));
 fprintf("Sy1: %.2f\n", T(numel(T) - 1));
 fprintf("Sy2: %.2f\n", T(numel(T)));
 cost = j*10 + totallength;
 fprintf("Cost of truss: $%.2f\n", cost);
-fprintf("Theoretical max load/cost ration in oz/$: %f\n", abs(Wmax/cost));
+fprintf("Theoretical max load/cost ratio in oz/$: %f\n", abs(Wmax/cost));
